@@ -1,4 +1,4 @@
-#!/usr/bin/python3.8
+#!/usr/bin/python3.7
 
 import logging
 import os
@@ -16,13 +16,15 @@ TELEGRAM_API_TOKEN = os.getenv("TELEGRAM_API_TOKEN")
 
 
 logger = logging.getLogger('TeleBot')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.ERROR)
 
 
 ADD_SENDER_COMMAND = localz.ADD_SENDER_COMMAND
 ADD_SUBSCRIBER_COMMAND = localz.ADD_SUBSCRIBER_COMMAND
 DELETE_SENDER_COMMAND = localz.DELETE_SENDER_COMMAND
 DELETE_SUBSCRIBER_COMMAND = localz.DELETE_SUBSCRIBER_COMMAND
+GET_SUBSCRIBERS_COMMAND = localz.GET_SUBSCRIBERS_COMMAND
+GET_SENDERS_COMMAND = localz.GET_SENDERS_COMMAND
 
 
 class Bot():
@@ -166,7 +168,7 @@ class ResenderBot(Bot):
                 "username": username,
             }
 
-        logger.info("Fetched the following subscribers: {}".format(self.__senders))
+        logger.info("Fetched the following senders: {}".format(self.__senders))
 
     def get_message(self, message: Message):
         db.insert_message(message)
@@ -178,6 +180,8 @@ class ResenderBot(Bot):
             ADD_SENDER_COMMAND: self.__add_sender,
             DELETE_SUBSCRIBER_COMMAND: self.__delete_subscriber,
             DELETE_SENDER_COMMAND: self.__delete_sender,
+            GET_SUBSCRIBERS_COMMAND: self.__get_subscribers_command,
+            GET_SENDERS_COMMAND: self.__get_senders_command,
         }
 
         command_handler = command_map.get(message_text, None)
@@ -216,10 +220,62 @@ class ResenderBot(Bot):
             except telebot.apihelper.ApiException:
                 pass
 
+    def __get_subscribers_command(self, message: Message):
+        cmd_sender_info = message.from_user
+        if str(cmd_sender_info.id) not in self.__subscribers:
+            return localz.MSG_IGNORE
+
+        results = []
+        number = 1
+        for user_info in self.__subscribers.values():
+            formed_data = '{}. {} {}'.format(
+                number,
+                user_info['first_name'],
+                user_info['last_name'])
+
+            if user_info['username']:
+                formed_data += ' (@{})'.format(user_info['username'])
+
+            results.append(formed_data)
+            number += 1
+
+        if not results:
+            return 'There is no active subscribers'
+
+        return '\n'.join(results)
+
+    def __get_senders_command(self, message: Message):
+        cmd_sender_info = message.from_user
+        if str(cmd_sender_info.id) not in self.__subscribers:
+            return localz.MSG_IGNORE
+
+        results = []
+        number = 1
+        for user_info in self.__senders.values():
+            formed_data = '{}. {} {}'.format(
+                number,
+                user_info['first_name'],
+                user_info['last_name'])
+
+            if user_info['username']:
+                formed_data += ' (@{})'.format(user_info['username'])
+
+            results.append(formed_data)
+            number += 1
+
+        if not results:
+            return 'There is no active senders'
+
+        return '\n'.join(results)
+
 
 resender = ResenderBot(token = TELEGRAM_API_TOKEN)
 
 
 while True:
-    resender.get_updates()
+    try:
+        resender.get_updates()
+    except Exception:
+        pass
+
     sleep(1)

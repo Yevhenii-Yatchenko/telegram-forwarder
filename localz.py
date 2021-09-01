@@ -4,6 +4,9 @@ ADD_SUBSCRIBER_COMMAND = '/Отчёт_Титан_Принять'
 DELETE_SENDER_COMMAND = '/Не_Отчёт_Титан_Отослать'
 DELETE_SUBSCRIBER_COMMAND = '/Не_Отчёт_Титан_Принять'
 
+GET_SUBSCRIBERS_COMMAND = '/получить_подписчиков'
+GET_SENDERS_COMMAND = '/получить_отправителей'
+
 MSG_YOU_ARE_ALREADY_SUBSCRIBER = "Вы уже подписаны на рассылку!"
 MSG_YOU_HAVE_BEEN_SUBSCRIBED = "Вы были подписаны на рассылку! :)"
 
