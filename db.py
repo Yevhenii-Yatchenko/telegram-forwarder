@@ -13,21 +13,21 @@ INSERT INTO messages (sender_id, message)
               VALUES (?, ?)
 """
 
-SQL_FETCH_SUBSCRIBERS = 'SELECT id FROM subscribers'
+SQL_FETCH_SUBSCRIBERS = 'SELECT id, first_name, last_name, username FROM subscribers'
 
 SQL_INSERT_SUBSCRIBER = """
-INSERT OR REPLACE INTO subscribers (id, init_datetime)
-                            VALUES (?, ?)
+INSERT OR REPLACE INTO subscribers (id, first_name, last_name, username, init_datetime)
+                            VALUES (?, ?, ?, ?, ?)
 """
 
 SQL_DELETE_SUBSCRIBER = 'DELETE FROM subscribers WHERE id = ?'
 
 SQL_INSERT_SENDER = """
-INSERT OR REPLACE INTO senders (id, init_datetime)
-                        VALUES (?, ?)
+INSERT OR REPLACE INTO senders (id, first_name, last_name, username, init_datetime)
+                        VALUES (?, ?, ?, ?, ?)
 """
 
-SQL_FETCH_SENDERS = 'SELECT id FROM senders'
+SQL_FETCH_SENDERS = 'SELECT id, first_name, last_name, username FROM senders'
 
 SQL_DELETE_SENDER = 'DELETE FROM senders WHERE id = ?'
 
@@ -39,8 +39,15 @@ def insert_message(message: Message):
     conn.commit()
 
 
-def insert_subscriber(id:str, init_datetime:str):
-    cursor.execute(SQL_INSERT_SUBSCRIBER, (id, init_datetime))
+def insert_subscriber(message: Message, init_datetime:str):
+    user_info = message.from_user
+    cursor.execute(
+        SQL_INSERT_SUBSCRIBER,
+        (str(user_info.id or ''),
+         str(user_info.first_name or ''),
+         str(user_info.last_name or ''),
+         str(user_info.username or ''),
+         init_datetime))
     conn.commit()
 
 
@@ -48,13 +55,21 @@ def fetch_subscribers() -> List[Tuple]:
     cursor.execute(SQL_FETCH_SUBSCRIBERS)
     return cursor.fetchall()
 
+
 def delete_subscriber(id: str):
     cursor.execute(SQL_DELETE_SUBSCRIBER, (id,))
     conn.commit()
 
 
-def insert_sender(id:str, init_datetime:str):
-    cursor.execute(SQL_INSERT_SENDER, (id, init_datetime))
+def insert_sender(message: Message, init_datetime:str):
+    user_info = message.from_user
+    cursor.execute(
+        SQL_INSERT_SENDER,
+        (str(user_info.id or ''),
+         str(user_info.first_name or ''),
+         str(user_info.last_name or ''),
+         str(user_info.username or ''),
+         init_datetime))
     conn.commit()
 
 

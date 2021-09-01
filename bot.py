@@ -16,7 +16,7 @@ TELEGRAM_API_TOKEN = os.getenv("TELEGRAM_API_TOKEN")
 
 
 logger = logging.getLogger('TeleBot')
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.DEBUG)
 
 
 ADD_SENDER_COMMAND = localz.ADD_SENDER_COMMAND
@@ -69,21 +69,28 @@ class ResenderBot(Bot):
     __senders = None
 
     def __init__(self, token: str):
-        self.__subscribers = set()
-        self.__senders = set()
+        self.__subscribers = dict()
+        self.__senders = dict()
         self.__get_subscribers()
         self.__get_senders()
 
         super().__init__(token)
 
     def __add_subscriber(self, message: Message) -> str:
-        subscriber_id = str(message.from_user.id)
+        user_info = message.from_user
+        subscriber_id = str(user_info.id)
         if subscriber_id in self.__subscribers:
             return localz.MSG_YOU_ARE_ALREADY_SUBSCRIBER
 
-        self.__subscribers.add(subscriber_id)
+        self.__subscribers[subscriber_id] = {
+            "id": user_info.id,
+            "first_name": user_info.first_name,
+            "last_name": user_info.last_name,
+            "username": user_info.username,
+        }
+
         db.insert_subscriber(
-            id = subscriber_id,
+            message = message,
             init_datetime = datetime.utcnow())
 
         logger.info("Inserted the following subscriber: {}".format(subscriber_id))
@@ -95,7 +102,7 @@ class ResenderBot(Bot):
         if subscriber_id not in self.__subscribers:
             return localz.MSG_YOU_ARE_ALREADY_NOT_SUBSCRIBER
 
-        self.__subscribers.remove(subscriber_id)
+        self.__subscribers.pop(subscriber_id)
         db.delete_subscriber(id = subscriber_id)
 
         logger.info("Deleted the following subscriber: {}".format(subscriber_id))
@@ -105,18 +112,31 @@ class ResenderBot(Bot):
     def __get_subscribers(self):
         results = db.fetch_subscribers()
         for result in results:
-            self.__subscribers.add(result[0])
+            id, first_name, last_name, username = result
+            self.__subscribers[id] = {
+                "id": id,
+                "first_name": first_name,
+                "last_name": last_name,
+                "username": username,
+            }
 
         logger.info("Fetched the following subscribers: {}".format(self.__subscribers))
 
     def __add_sender(self, message: Message):
-        sender_id = str(message.from_user.id)
+        user_info = message.from_user
+        sender_id = str(user_info.id)
         if sender_id in self.__senders:
             return localz.MSG_YOU_ARE_ALREADY_SENDER
 
-        self.__senders.add(sender_id)
+        self.__senders[sender_id] = {
+            "id": user_info.id,
+            "first_name": user_info.first_name,
+            "last_name": user_info.last_name,
+            "username": user_info.username,
+        }
+
         db.insert_sender(
-            id = sender_id,
+            message = message,
             init_datetime = datetime.utcnow())
 
         logger.info("Inserted the following sender: {}".format(sender_id))
@@ -128,7 +148,7 @@ class ResenderBot(Bot):
         if sender_id not in self.__senders:
             return localz.MSG_YOU_ARE_ALREADY_NOT_SENDER
 
-        self.__senders.remove(sender_id)
+        self.__senders.pop(sender_id)
         db.delete_sender(id = sender_id)
 
         logger.info("Deleted the following sender: {}".format(sender_id))
@@ -138,7 +158,13 @@ class ResenderBot(Bot):
     def __get_senders(self):
         results = db.fetch_senders()
         for result in results:
-            self.__senders.add(result[0])
+            id, first_name, last_name, username = result
+            self.__senders[id] = {
+                "id": id,
+                "first_name": first_name,
+                "last_name": last_name,
+                "username": username,
+            }
 
         logger.info("Fetched the following subscribers: {}".format(self.__senders))
 
