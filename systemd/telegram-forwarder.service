@@ -1,0 +1,13 @@
+[Unit]
+Description=forwarder-bot
+After=syslog.target
+ 
+[Service]
+User=<USER>
+ExecStart=<PATH/TO/BOT.py>
+SuccessExitStatus=0
+Environment="TELEGRAM_API_TOKEN=<TOKEN>"
+ 
+[Install]
+WantedBy=multi-user.target
+
