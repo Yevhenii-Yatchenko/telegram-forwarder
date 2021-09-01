@@ -9,6 +9,7 @@ import telebot
 from telebot.types import Message
 
 import db
+import localz
 
 
 TELEGRAM_API_TOKEN = os.getenv("TELEGRAM_API_TOKEN")
@@ -18,14 +19,14 @@ logger = logging.getLogger('TeleBot')
 logger.setLevel(logging.ERROR)
 
 
-ADD_SENDER_COMMAND = '/Отчёт_Титан_Отослать'
-ADD_SUBSCRIBER_COMMAND = '/Отчёт_Титан_Принять'
-
-DELETE_SENDER_COMMAND = '/Не_Отчёт_Титан_Отослать'
-DELETE_SUBSCRIBER_COMMAND = '/Не_Отчёт_Титан_Принять'
+ADD_SENDER_COMMAND = localz.ADD_SENDER_COMMAND
+ADD_SUBSCRIBER_COMMAND = localz.ADD_SUBSCRIBER_COMMAND
+DELETE_SENDER_COMMAND = localz.DELETE_SENDER_COMMAND
+DELETE_SUBSCRIBER_COMMAND = localz.DELETE_SUBSCRIBER_COMMAND
 
 
 class Bot():
+    #: telebot.TeleBot: instance of the bot API.
     _bot = None
 
     def __init__(self, token: str):
@@ -78,7 +79,7 @@ class ResenderBot(Bot):
     def __add_subscriber(self, message: Message) -> str:
         subscriber_id = str(message.from_user.id)
         if subscriber_id in self.__subscribers:
-            return "Вы уже подписаны на рассылку!"
+            return localz.MSG_YOU_ARE_ALREADY_SUBSCRIBER
 
         self.__subscribers.add(subscriber_id)
         db.insert_subscriber(
@@ -87,19 +88,19 @@ class ResenderBot(Bot):
 
         logger.info("Inserted the following subscriber: {}".format(subscriber_id))
 
-        return "Вы были подписал на рассылку! :)"
+        return localz.MSG_YOU_HAVE_BEEN_SUBSCRIBED
 
     def __delete_subscriber(self, message:Message) -> str:
         subscriber_id = str(message.from_user.id)
         if subscriber_id not in self.__subscribers:
-            return "Ты уже не подписан на рассылку!"
+            return localz.MSG_YOU_ARE_ALREADY_NOT_SUBSCRIBER
 
         self.__subscribers.remove(subscriber_id)
         db.delete_subscriber(id = subscriber_id)
 
         logger.info("Deleted the following subscriber: {}".format(subscriber_id))
 
-        return "Вы больше не подписаны на рассылку! :)"
+        return localz.MSG_YOU_HAVE_BEEN_UNSUBSCRIBED
 
     def __get_subscribers(self):
         results = db.fetch_subscribers()
@@ -111,7 +112,7 @@ class ResenderBot(Bot):
     def __add_sender(self, message: Message):
         sender_id = str(message.from_user.id)
         if sender_id in self.__senders:
-            return "Вы уже запомнены. Шлите мне сообщения для пересылки!"
+            return localz.MSG_YOU_ARE_ALREADY_SENDER
 
         self.__senders.add(sender_id)
         db.insert_sender(
@@ -120,19 +121,19 @@ class ResenderBot(Bot):
 
         logger.info("Inserted the following sender: {}".format(sender_id))
 
-        return "Вы запомнены. Шлите мне сообщения для пересылки! :)"
+        return localz.MSG_YOU_HAVE_BEEN_MARKED_AS_SENDER
 
     def __delete_sender(self, message:Message) -> str:
         sender_id = str(message.from_user.id)
         if sender_id not in self.__senders:
-            return "Вы уже забыты. Теперь сообщения для пересылки ингорируются!"
+            return localz.MSG_YOU_ARE_ALREADY_NOT_SENDER
 
         self.__senders.remove(sender_id)
         db.delete_sender(id = sender_id)
 
         logger.info("Deleted the following sender: {}".format(sender_id))
 
-        return "Вы были забыты. Теперь сообщения для пересылки ингорируются! :)"
+        return localz.MSG_YOU_HAVE_BEEN_UNMARKED_AS_SENDER
 
     def __get_senders(self):
         results = db.fetch_senders()
@@ -160,7 +161,7 @@ class ResenderBot(Bot):
             return
 
         user_id = str(message.from_user.id)
-        reply_text = 'Мне нечего сказать об этом!'
+        reply_text = localz.MSG_IGNORE
         if user_id in self.__senders:
             reply_text = self.__process_message_from_sender(message)
 
@@ -168,7 +169,7 @@ class ResenderBot(Bot):
 
     def __process_message_from_sender(self, message: Message):
         self.__resend_message(message)
-        return 'Сообщение передано. Спасибо :)'
+        return localz.MSG_FORWARDED
 
     def __resend_message(self, message: Message):
         """Forwards message from the receiver bot to the subscribers.
